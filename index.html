@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>将棋マジック - みんなで対戦</title>
+  <meta name="description" content="シンプルで楽しいウェブ将棋ゲーム。直感的に駒を動かせて、自分の戦略で相手をチェックメイトに導く。" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f0c29" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Start Screen -->
+  <section id="start-screen">
+    <h1 class="start-title">将棋マジック</h1>
+    <p class="start-subtitle">指すたびに星が輝く、ワクワク将棋体験</p>
+    <div class="level-buttons">
+      <button class="level-btn beginner" data-level="beginner">
+        初級 (2人対戦)<br /><span class="level-label">基本ルールだけ</span>
+      </button>
+      <button class="level-btn intermediate" data-level="intermediate">
+        中級 (2人対戦)<br /><span class="level-label">ルール＋簡易AI</span>
+      </button>
+      <button class="level-btn advanced" data-level="advanced">
+        上級 (AI対戦)<br /><span class="level-label">本格プレイ</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Game Screen -->
+  <section id="game-screen">
+    <header class="header-bar">
+      <div class="turn-indicator">
+        <span class="turn-dot"></span> <span id="turn-text">先手番</span>
+      </div>
+      <div class="header-buttons">
+        <button class="header-btn" id="restart-btn">やり直す</button>
+        <button class="header-btn" id="quit-btn">終了</button>
+      </div>
+    </header>
+    <div class="game-container">
+      <div class="hand-panel" id="hand-sente">
+        <div class="hand-title">持ち駒 (先手)</div>
+        <div class="hand-pieces" id="hand-sente-pieces"></div>
+      </div>
+      <div class="board-wrapper">
+        <div class="board" id="board"></div>
+      </div>
+      <div class="hand-panel" id="hand-gote">
+        <div class="hand-title">持ち駒 (後手)</div>
+        <div class="hand-pieces" id="hand-gote-pieces"></div>
+      </div>
+    </div>
+    <div class="thinking" id="thinking-indicator">
+      思考中 <div class="thinking-dots"><span></span><span></span><span></span></div>
+    </div>
+  </section>
+
+  <!-- Promotion Dialog -->
+  <div id="promote-dialog">
+    <div class="promote-box">
+      <h3>成りますか？</h3>
+      <div class="promote-options">
+        <div class="promote-option" data-choice="promote">成る</div>
+        <div class="promote-option" data-choice="no-promote">成らない</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Win Overlay -->
+  <div id="win-overlay">
+    <div class="win-text" id="win-text"></div>
+    <div class="win-sub">ゲームを続けますか？</div>
+    <div class="win-buttons">
+      <div class="win-btn" id="win-restart">再開</div>
+      <div class="win-btn" id="win-quit">終了</div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => console.log('ServiceWorker registered:', registration.scope))
+          .catch(error => console.log('ServiceWorker error:', error));
+      });
+    }
+  </script>
+</body>
+</html>
