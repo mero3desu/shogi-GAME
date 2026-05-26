@@ -407,151 +407,12 @@ function showCaptureEffect(x, y) {
   setTimeout(() => effect.remove(), 600);
 }
 
-// --- New Minimax AI Logic ---
-const PIECE_VALUES = {
-  'P': 100, 'L': 300, 'N': 300, 'S': 500,
-  'G': 600, 'B': 800, 'R': 1000, 'K': 100000
-};
-const PROMOTED_VALUES = {
-  'P': 600, 'L': 600, 'N': 600, 'S': 600,
-  'B': 1200, 'R': 1500
-};
-
-function getPieceValue(piece) {
-  if (!piece) return 0;
-  let val = piece.promoted && PROMOTED_VALUES[piece.type] ? PROMOTED_VALUES[piece.type] : PIECE_VALUES[piece.type];
-  return piece.owner === 'gote' ? val : -val;
-}
-
-function evaluateBoard(currentBoard, currentHands) {
-  let score = 0;
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
-      const p = currentBoard[y][x];
-      if (p) {
-        score += getPieceValue(p);
-        if (p.type !== 'K') {
-            const advanceBonus = p.owner === 'gote' ? y : (8 - y);
-            score += (p.owner === 'gote' ? 1 : -1) * advanceBonus * 2;
-        }
-      }
-    }
-  }
-  for (let type in currentHands.gote) score += PIECE_VALUES[type] * currentHands.gote[type] * 1.1;
-  for (let type in currentHands.sente) score -= PIECE_VALUES[type] * currentHands.sente[type] * 1.1;
-  return score;
-}
-
-function cloneBoard(b) {
-  return b.map(row => row.map(cell => cell ? { ...cell } : null));
-}
-function cloneHands(h) {
-  return { sente: { ...h.sente }, gote: { ...h.gote } };
-}
-
-function generateAllMoves(currentBoard, currentHands, playerTurn) {
-  const allMoves = [];
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
-      const piece = currentBoard[y][x];
-      if (piece && piece.owner === playerTurn) {
-        const moves = getValidMoves(x, y, piece, currentBoard);
-        moves.forEach(m => allMoves.push({ from: {x, y}, to: m, piece }));
-      }
-    }
-  }
-  const emptyCells = [];
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
-      if (!currentBoard[y][x]) emptyCells.push({x, y});
-    }
-  }
-  const pHand = currentHands[playerTurn];
-  for (const type in pHand) {
-    if (pHand[type] > 0) {
-      emptyCells.forEach(cell => {
-        if (type === 'P') {
-          for (let iy = 0; iy < BOARD_SIZE; iy++) {
-            const p = currentBoard[iy][cell.x];
-            if (p && p.type === 'P' && p.owner === playerTurn && !p.promoted) return;
-          }
-          if (playerTurn === 'sente' && cell.y === 0) return;
-          if (playerTurn === 'gote' && cell.y === 8) return;
-        }
-        if (type === 'L' && ((playerTurn === 'sente' && cell.y === 0) || (playerTurn === 'gote' && cell.y === 8))) return;
-        if (type === 'N' && ((playerTurn === 'sente' && cell.y <= 1) || (playerTurn === 'gote' && cell.y >= 7))) return;
-        allMoves.push({ drop: true, type, to: cell });
-      });
-    }
-  }
-  return allMoves;
-}
-
-function simulateMove(currentBoard, currentHands, move, playerTurn) {
-  const newBoard = cloneBoard(currentBoard);
-  const newHands = cloneHands(currentHands);
-  if (move.drop) {
-    newBoard[move.to.y][move.to.x] = createPiece(move.type, playerTurn);
-    newHands[playerTurn][move.type]--;
-  } else {
-    const targetPiece = newBoard[move.to.y][move.to.x];
-    if (targetPiece && targetPiece.owner !== playerTurn) {
-      newHands[playerTurn][targetPiece.type] = (newHands[playerTurn][targetPiece.type] || 0) + 1;
-    }
-    let movedPiece = { ...newBoard[move.from.y][move.from.x] };
-    newBoard[move.to.y][move.to.x] = movedPiece;
-    newBoard[move.from.y][move.from.x] = null;
-    
-    const isSente = playerTurn === 'sente';
-    const promotionZone = isSente ? [0, 1, 2] : [6, 7, 8];
-    if (PIECE_TYPES[movedPiece.type].promoted && !movedPiece.promoted && (promotionZone.includes(move.to.y) || promotionZone.includes(move.from.y))) {
-       movedPiece.promoted = true;
-    }
-  }
-  return { board: newBoard, hands: newHands };
-}
-
-function findBestMoveMinimax() {
-  const aiMoves = generateAllMoves(board, hands, 'gote');
-  if (aiMoves.length === 0) return null;
-
-  let bestMove = null;
-  let bestScore = -Infinity;
-
-  for (let move of aiMoves) {
-    const stateAfterAI = simulateMove(board, hands, move, 'gote');
-    let scoreAfterAI = evaluateBoard(stateAfterAI.board, stateAfterAI.hands);
-    
-    // If AI captures player's king, immediate win
-    if (scoreAfterAI > 50000) return move;
-
-    const playerMoves = generateAllMoves(stateAfterAI.board, stateAfterAI.hands, 'sente');
-    let minScore = Infinity;
-    
-    for (let pMove of playerMoves) {
-        const stateAfterPlayer = simulateMove(stateAfterAI.board, stateAfterAI.hands, pMove, 'sente');
-        let finalScore = evaluateBoard(stateAfterPlayer.board, stateAfterPlayer.hands);
-        
-        if (finalScore < minScore) minScore = finalScore;
-        // Alpha-beta pruning / early exit if player captures AI's king
-        if (minScore < -50000) break;
-    }
-
-    // Add tiny random factor to diversify play
-    minScore += (Math.random() * 10 - 5); 
-
-    if (minScore > bestScore) {
-        bestScore = minScore;
-        bestMove = move;
-    }
-  }
-  return bestMove;
-}
-
-function playAITurn() {
-  // Delay calculation slightly so UI can render the thinking indicator
-  setTimeout(() => {
-    const chosenMove = findBestMoveMinimax();
+// --- AI Worker Logic ---
+let aiWorker = null;
+if (window.Worker) {
+  aiWorker = new Worker('./ai.js');
+  aiWorker.onmessage = function(e) {
+    const chosenMove = e.data.bestMove;
     thinkingEl.classList.remove('active');
     
     if (!chosenMove) {
@@ -566,7 +427,21 @@ function playAITurn() {
     } else {
         executeMove(chosenMove.from.x, chosenMove.from.y, chosenMove.to.x, chosenMove.to.y, chosenMove.piece);
     }
-  }, 100);
+  };
+}
+
+function playAITurn() {
+  if (!aiWorker) {
+      alert("エラー: Web Workerがサポートされていません。");
+      return;
+  }
+  // ワーカーに盤面データを送って思考を開始させる
+  aiWorker.postMessage({
+      board: board,
+      hands: hands,
+      turn: 'gote',
+      limit: 2000 // 2000ミリ秒（2秒間）思考する
+  });
 }
 
 document.getElementById('restart-btn').addEventListener('click', () => {

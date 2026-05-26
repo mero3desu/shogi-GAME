@@ -1,9 +1,10 @@
-const CACHE_NAME = 'shogi-magic-v3';
+const CACHE_NAME = 'shogi-magic-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './game.js',
+  './ai.js',
   './icon.svg',
   './manifest.json'
 ];
