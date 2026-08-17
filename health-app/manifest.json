@@ -1,0 +1,17 @@
+{
+  "name": "体調管理ノート",
+  "short_name": "体調ノート",
+  "description": "血糖値・体調・食事を記録して分析する個人向け健康管理アプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf7f5",
+  "theme_color": "#6c63ff",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

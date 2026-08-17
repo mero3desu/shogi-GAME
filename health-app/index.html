@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>体調管理ノート</title>
+  <meta name="description" content="血糖値（フリースタイルリブレ）・体調・食事を記録して分析する個人向け健康管理アプリ" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6c63ff" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-title">
+      <img src="icon.svg" alt="" class="app-logo" />
+      <div>
+        <h1>体調管理ノート</h1>
+        <p class="app-sub">血糖値・体調・食事の記録と分析</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="dashboard">ダッシュボード</button>
+      <button class="tab-btn" data-tab="log">記録を追加</button>
+      <button class="tab-btn" data-tab="import">データ取込</button>
+      <button class="tab-btn" data-tab="advice">分析とアドバイス</button>
+      <button class="tab-btn" data-tab="settings">設定・保存</button>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- Dashboard -->
+    <section class="panel active" id="panel-dashboard">
+      <div class="panel-head">
+        <h2>血糖値の推移</h2>
+        <div class="range-controls">
+          <label>表示日数
+            <select id="range-days">
+              <option value="1">当日</option>
+              <option value="3" selected>直近3日</option>
+              <option value="7">直近7日</option>
+              <option value="14">直近14日</option>
+              <option value="30">直近30日</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <span><i class="dot band-night"></i>夜間 0-6時</span>
+        <span><i class="dot band-morning"></i>朝 6-10時</span>
+        <span><i class="dot band-noon"></i>昼 10-15時</span>
+        <span><i class="dot band-evening"></i>夕方 15-19時</span>
+        <span><i class="dot band-night2"></i>夜 19-24時</span>
+        <span><i class="line-sample low"></i>要注意ライン 70</span>
+        <span><i class="line-sample severe"></i>危険ライン 54</span>
+        <span><i class="marker-sample">●</i>体調記録</span>
+      </div>
+      <div id="chart-wrap" class="chart-wrap">
+        <p class="empty-hint" id="chart-empty">まだ血糖値データがありません。「データ取込」タブからリブレのCSVを読み込むか、「記録を追加」から手入力してください。</p>
+      </div>
+
+      <div class="stat-grid" id="stat-grid"></div>
+
+      <h2>最近の記録</h2>
+      <div id="recent-logs" class="log-list"></div>
+    </section>
+
+    <!-- Log entry -->
+    <section class="panel" id="panel-log">
+      <h2>記録を追加</h2>
+      <form id="log-form" class="log-form">
+        <div class="form-row">
+          <label>日付 <input type="date" id="log-date" required /></label>
+          <label>時刻 <input type="time" id="log-time" required /></label>
+        </div>
+
+        <div class="form-row">
+          <label>区分
+            <select id="log-category">
+              <option value="breakfast">朝食</option>
+              <option value="lunch">昼食</option>
+              <option value="dinner">夕食・晩酌</option>
+              <option value="symptom">体調（めまい・倦怠感など）</option>
+              <option value="glucose">血糖値（手入力）</option>
+              <option value="note">メモ</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="fields-meal" class="dynamic-fields">
+          <p class="hint">よく食べるものはタップで追加できます</p>
+          <div class="chip-row" id="meal-chips"></div>
+          <label>内容<textarea id="meal-text" rows="2" placeholder="例）カフェオレ(ノンシュガー)、ゆで卵、キャロットラペ、丸パン"></textarea></label>
+          <label id="alcohol-field" style="display:none">晩酌の量（ビール350ml換算・本）
+            <input type="number" id="alcohol-amount" min="0" step="0.5" value="0" />
+          </label>
+        </div>
+
+        <div id="fields-symptom" class="dynamic-fields" style="display:none">
+          <label>症状の種類
+            <select id="symptom-type">
+              <option value="dizziness">めまい</option>
+              <option value="fatigue">強い倦怠感（横になりたい）</option>
+              <option value="both">めまい＋倦怠感</option>
+              <option value="other">その他</option>
+            </select>
+          </label>
+          <label>つらさ（1: 軽い 〜 5: 動けないほど）
+            <input type="range" id="symptom-severity" min="1" max="5" value="3" />
+            <output id="symptom-severity-out">3</output>
+          </label>
+          <label>横にならないと耐えられなかった
+            <input type="checkbox" id="symptom-lay-down" />
+          </label>
+          <label>メモ<textarea id="symptom-note" rows="2" placeholder="発汗・動悸・手の震え・空腹感などがあれば"></textarea></label>
+        </div>
+
+        <div id="fields-glucose" class="dynamic-fields" style="display:none">
+          <label>血糖値 (mg/dL)<input type="number" id="glucose-value" min="20" max="500" /></label>
+        </div>
+
+        <div id="fields-note" class="dynamic-fields" style="display:none">
+          <label>メモ<textarea id="note-text" rows="2"></textarea></label>
+        </div>
+
+        <button type="submit" class="primary-btn">記録を保存</button>
+      </form>
+    </section>
+
+    <!-- Import -->
+    <section class="panel" id="panel-import">
+      <h2>データ取込</h2>
+
+      <div class="import-card">
+        <h3>① フリースタイルリブレ（LibreView）CSV</h3>
+        <p class="hint">LibreView（またはLibreLinkUpの管理サイト）からエクスポートしたCSVファイルを選択してください。「読み取り時刻」と「グルコース値」の列を自動認識します。</p>
+        <input type="file" id="libre-file" accept=".csv,text/csv" />
+        <div id="libre-status" class="import-status"></div>
+      </div>
+
+      <div class="import-card">
+        <h3>② Apple ヘルスケア エクスポート（任意）</h3>
+        <p class="hint">iPhoneの「ヘルスケア」アプリ →プロフィール→「すべてのヘルスデータを書き出す」で得られる export.xml を選択すると、心拍数・睡眠のサマリーを取り込みます（大きいファイルは時間がかかります）。</p>
+        <input type="file" id="apple-file" accept=".xml" />
+        <div id="apple-status" class="import-status"></div>
+      </div>
+
+      <div class="import-card">
+        <h3>③ このアプリのバックアップ（JSON）を復元</h3>
+        <input type="file" id="backup-file" accept="application/json" />
+        <div id="backup-status" class="import-status"></div>
+      </div>
+    </section>
+
+    <!-- Advice -->
+    <section class="panel" id="panel-advice">
+      <h2>分析とアドバイス</h2>
+      <p class="disclaimer">※これは医療的診断ではありません。低血糖の反復や強い倦怠感が続く場合は、必ず主治医（内科・婦人科）にご相談ください。</p>
+      <div id="advice-content"></div>
+    </section>
+
+    <!-- Settings -->
+    <section class="panel" id="panel-settings">
+      <h2>プロフィール設定</h2>
+      <form id="profile-form" class="log-form">
+        <div class="form-row">
+          <label>年齢<input type="number" id="p-age" value="50" /></label>
+          <label>身長(cm)<input type="number" id="p-height" value="167" /></label>
+          <label>体重(kg)<input type="number" id="p-weight" value="53" /></label>
+        </div>
+        <label>閉経状況
+          <select id="p-menopause">
+            <option value="pre">まだ（未閉経）</option>
+            <option value="peri">閉経移行期（周期が不安定）</option>
+            <option value="post">閉経済み</option>
+          </select>
+        </label>
+        <button type="submit" class="primary-btn">保存</button>
+      </form>
+
+      <h2>データの管理</h2>
+      <p class="hint">記録はすべてこの端末のブラウザ内だけに保存され、外部には送信されません。機種変更やバックアップ用に、定期的にJSONで書き出すことをおすすめします。</p>
+      <div class="btn-row">
+        <button id="export-btn" class="secondary-btn">JSONで書き出す</button>
+        <button id="clear-btn" class="danger-btn">すべてのデータを削除</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
